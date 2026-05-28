@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,11 +19,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,25 +44,45 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team4.ecohabit.R
+import com.team4.ecohabit.data.SessionManager
 import com.team4.ecohabit.ui.theme.brightGreen
 import com.team4.ecohabit.ui.theme.grayGreen
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
+import com.team4.ecohabit.components.LogoutDialog
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
-@Preview(showBackground = true)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    navController: NavController
+) {
+    val scope = rememberCoroutineScope()
+
+    val context = LocalContext.current
+
+    val sessionManager = remember {
+        SessionManager(context)
+    }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize(),
 
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-
         item {
             ProfileCard()
         }
 
         item {
-            SettingsCard()
+            SettingsCard(
+                sessionManager = sessionManager,
+                navController = navController,
+                scope = scope
+            )
         }
 
         item {
@@ -167,7 +192,14 @@ fun ProfileCard() {
 
 
 @Composable
-fun SettingsCard() {
+fun SettingsCard(
+    sessionManager: SessionManager,
+    navController: NavController,
+    scope: CoroutineScope
+) {
+    var showLogoutDialog by remember {
+        mutableStateOf(false)
+    }
 
     Card(
         modifier = Modifier
@@ -216,6 +248,10 @@ fun SettingsCard() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable {
+
+                        showLogoutDialog = true
+                    }
                     .padding(20.dp),
 
                 verticalAlignment = Alignment.CenterVertically
@@ -235,6 +271,32 @@ fun SettingsCard() {
                 )
             }
         }
+    }
+
+    if (showLogoutDialog) {
+
+        LogoutDialog(
+
+            onDismiss = {
+
+                showLogoutDialog = false
+            },
+
+            onLogout = {
+
+                scope.launch {
+
+                    showLogoutDialog = false
+
+                    sessionManager.logout()
+
+                    navController.navigate("login") {
+
+                        popUpTo(0)
+                    }
+                }
+            }
+        )
     }
 }
 

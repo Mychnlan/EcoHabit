@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.team4.ecohabit.ui.theme.backgroundCardLight
+import com.team4.ecohabit.ui.theme.brightGreen
 
 @Composable
 fun PageLoading() {
@@ -46,7 +48,7 @@ fun PageLoading() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF4FAF2)),
+            .background(backgroundCardLight),
 
         contentAlignment = Alignment.Center
     ) {
@@ -56,7 +58,7 @@ fun PageLoading() {
                 .size(52.dp)
                 .scale(scale),
 
-            color = Color(0xFF0A6B18),
+            color = brightGreen,
             strokeWidth = 5.dp
         )
     }
