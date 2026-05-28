@@ -54,12 +54,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.team4.ecohabit.R
+import com.team4.ecohabit.ui.theme.brightGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: () -> Unit
 ) {
 
     var email by rememberSaveable {
@@ -141,7 +142,7 @@ fun LoginScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(38.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
                     text = "Welcome Back",
@@ -161,7 +162,7 @@ fun LoginScreen(
                     color = Color.Gray
                 )
 
-                Spacer(modifier = Modifier.height(52.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Column(
                     modifier = Modifier.fillMaxWidth()
@@ -228,42 +229,14 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
+                    Text(
+                        text = "Password",
 
-                        horizontalArrangement =
-                            Arrangement.SpaceBetween,
+                        style =
+                            MaterialTheme.typography.titleMedium,
 
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ) {
-
-                        Text(
-                            text = "Password",
-
-                            style =
-                                MaterialTheme.typography.titleMedium,
-
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Text(
-                            text = "Forgot Password?",
-
-                            color = Color(0xFF056B13),
-
-                            fontWeight = FontWeight.SemiBold,
-
-                            modifier = Modifier.clickable(
-                                indication = null,
-                                interactionSource = remember {
-                                    MutableInteractionSource()
-                                }
-                            ) {
-
-                            }
-                        )
-                    }
+                        fontWeight = FontWeight.SemiBold
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -352,7 +325,7 @@ fun LoginScreen(
                             delay(1500)
 
                             if (
-                                email == "admin@ecohabit.com" &&
+                                email == "admin@gmail.com" &&
                                 password == "123456"
                             ) {
 
@@ -370,15 +343,15 @@ fun LoginScreen(
 
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(72.dp)
+                        .height(50.dp)
                         .shadow(
                             elevation = 12.dp,
-                            shape = RoundedCornerShape(100.dp)
+                            shape = RoundedCornerShape(12.dp)
                         ),
 
                     enabled = !isLoading,
 
-                    shape = RoundedCornerShape(100.dp),
+                    shape = RoundedCornerShape(12.dp),
 
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF056B13)
@@ -404,9 +377,7 @@ fun LoginScreen(
 
                             Text(
                                 text = "Ready to go!",
-
-                                style =
-                                    MaterialTheme.typography.headlineSmall
+                                style = MaterialTheme.typography.headlineSmall
                             )
 
                             Spacer(
@@ -428,7 +399,7 @@ fun LoginScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(54.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -459,7 +430,7 @@ fun LoginScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(52.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 Row(
                     horizontalArrangement =
@@ -475,8 +446,6 @@ fun LoginScreen(
                         color = Color.Gray
                     )
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
                     TextButton(
                         onClick = {
 
@@ -486,7 +455,7 @@ fun LoginScreen(
                         Text(
                             text = "Create an account",
 
-                            color = Color(0xFF056B13),
+                            color = brightGreen,
 
                             fontWeight = FontWeight.Bold
                         )

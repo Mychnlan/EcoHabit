@@ -57,4 +57,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.androidx.compose.animation)
+    implementation("androidx.datastore:datastore-preferences:1.2.1")
 }
