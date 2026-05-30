@@ -3,10 +3,8 @@ package com.team4.ecohabit.screens.auth
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,9 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -35,7 +35,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,14 +53,19 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.team4.ecohabit.R
+import com.team4.ecohabit.auth.FirebaseAuthManager
 import com.team4.ecohabit.ui.theme.brightGreen
-import com.team4.ecohabit.ui.theme.buttonAction
-import kotlinx.coroutines.delay
+import com.team4.ecohabit.ui.theme.grayGreen
+import com.team4.ecohabit.ui.theme.softGreen
+import com.team4.ecohabit.ui.theme.titleTextColor
+import com.team4.ecohabit.ui.theme.white
 import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onRegisterClick: () -> Unit,
+    onGoogleSignIn: suspend () -> Result<Unit>
 ) {
 
     var email by rememberSaveable {
@@ -72,7 +76,11 @@ fun LoginScreen(
         mutableStateOf("")
     }
 
-    var isLoading by remember {
+    var isEmailLoading by remember {
+        mutableStateOf(false)
+    }
+
+    var isGoogleLoading by remember {
         mutableStateOf(false)
     }
 
@@ -81,13 +89,14 @@ fun LoginScreen(
     }
 
     val focusManager = LocalFocusManager.current
+
     val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Color(0xFFF4FAF2)
+                softGreen
             )
             .statusBarsPadding()
             .navigationBarsPadding()
@@ -97,7 +106,7 @@ fun LoginScreen(
             modifier = Modifier
                 .padding(
                     horizontal = 22.dp,
-                    vertical = 28.dp
+                    vertical = 22.dp
                 )
                 .fillMaxSize(),
 
@@ -111,11 +120,11 @@ fun LoginScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(
                         horizontal = 28.dp,
                         vertical = 34.dp
                     ),
-
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
@@ -137,9 +146,9 @@ fun LoginScreen(
 
                         contentDescription = null,
 
-                        tint = Color(0xFF056B13),
+                        tint = brightGreen,
 
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(40.dp)
                     )
                 }
 
@@ -229,13 +238,10 @@ fun LoginScreen(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-
                     Text(
                         text = "Password",
-
                         style =
                             MaterialTheme.typography.titleMedium,
-
                         fontWeight = FontWeight.SemiBold
                     )
 
@@ -261,15 +267,12 @@ fun LoginScreen(
                                 painter = painterResource(
                                     R.drawable.ic_lock
                                 ),
-
                                 contentDescription = null,
-
                                 tint = Color.Gray
                             )
                         },
 
                         placeholder = {
-
                             Text(
                                 text = "••••••••"
                             )
@@ -291,17 +294,13 @@ fun LoginScreen(
 
                 AnimatedVisibility(
                     visible = errorMessage.isNotEmpty(),
-
                     enter = fadeIn(),
-
                     exit = fadeOut()
                 ) {
 
                     Text(
                         text = errorMessage,
-
                         color = Color.Red,
-
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 14.dp),
@@ -314,31 +313,36 @@ fun LoginScreen(
 
                 Button(
                     onClick = {
-
                         focusManager.clearFocus()
-
                         errorMessage = ""
 
-                        scope.launch {
-
-                            isLoading = true
-
-                            delay(1500)
-
-                            if (
-                                email == "admin@gmail.com" &&
-                                password == "123456"
-                            ) {
-
-                                onLoginSuccess()
-
-                            } else {
-
-                                errorMessage =
-                                    "Invalid email or password"
+                        when {
+                            email.isBlank() -> {
+                                errorMessage = "Email is required"
                             }
 
-                            isLoading = false
+                            password.isBlank() -> {
+                                errorMessage = "Password is required"
+                            }
+
+                            else -> {
+                                isEmailLoading = true
+
+                                FirebaseAuthManager.login(
+                                    email = email.trim(),
+                                    password = password,
+
+                                    onSuccess = {
+                                        isEmailLoading = false
+                                        onLoginSuccess()
+                                    },
+
+                                    onError = { message ->
+                                        isEmailLoading = false
+                                        errorMessage = message
+                                    }
+                                )
+                            }
                         }
                     },
 
@@ -350,9 +354,10 @@ fun LoginScreen(
                             shape = RoundedCornerShape(12.dp)
                         ),
 
-                    enabled = !isLoading,
+                    enabled =
+                        !isEmailLoading && !isGoogleLoading,
                     colors = ButtonDefaults.buttonColors(
-                            containerColor = brightGreen,
+                        containerColor = brightGreen,
                         disabledContainerColor = brightGreen,
                         disabledContentColor = Color.White
                     ),
@@ -360,7 +365,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(12.dp),
                 ) {
 
-                    if (isLoading) {
+                    if (isEmailLoading) {
 
                         CircularProgressIndicator(
                             modifier = Modifier.size(26.dp),
@@ -411,7 +416,6 @@ fun LoginScreen(
 
                     HorizontalDivider(
                         modifier = Modifier.weight(1f),
-
                         color = Color(0xFFDCE4D9)
                     )
 
@@ -432,35 +436,111 @@ fun LoginScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    horizontalArrangement =
-                        Arrangement.Center,
-
-                    verticalAlignment =
-                        Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    Text(
-                        text = "New to EcoHabit?",
-
-                        color = Color.Gray
-                    )
-
-                    TextButton(
+                    Button(
                         onClick = {
 
+                            errorMessage = ""
+
+                            scope.launch {
+
+                                isGoogleLoading = true
+
+                                val result =
+                                    onGoogleSignIn()
+
+                                result.exceptionOrNull()?.let {
+
+                                    errorMessage =
+                                        it.message
+                                            ?: "Google Sign-In failed"
+                                }
+
+                                isGoogleLoading = false
+                            }
+                        },
+
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+
+                        enabled =
+                            !isEmailLoading &&
+                                    !isGoogleLoading,
+
+                        shape = RoundedCornerShape(14.dp),
+
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = white,
+                            contentColor = titleTextColor
+                        ),
+
+                        border = BorderStroke(
+                            1.dp,
+                            grayGreen
+                        )
+                    ) {
+
+                        if (isGoogleLoading) {
+
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = brightGreen
+                            )
+
+                        } else {
+
+                            Icon(
+                                painter = painterResource(
+                                    R.drawable.ic_google
+                                ),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(22.dp)
+                            )
+
+                            Spacer(
+                                modifier = Modifier.width(12.dp)
+                            )
+
+                            Text(
+                                text = "Continue with Google",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = titleTextColor
+                            )
                         }
+                    }
+
+                    Spacer(
+                        modifier = Modifier.height(20.dp)
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
 
                         Text(
-                            text = "Create an account",
-
-                            color = brightGreen,
-
-                            fontWeight = FontWeight.Bold
+                            text = "New to EcoHabit?",
+                            color = Color.Gray
                         )
+
+                        TextButton(
+                            onClick = onRegisterClick
+                        ) {
+
+                            Text(
+                                text = "Create an account",
+                                color = brightGreen,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
