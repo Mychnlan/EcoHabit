@@ -1,6 +1,7 @@
 package com.team4.ecohabit
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
@@ -30,9 +31,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.team4.ecohabit.components.BottomNavigationBar
+import com.team4.ecohabit.components.HeaderBar
 import com.team4.ecohabit.components.PageLoading
 import com.team4.ecohabit.data.SessionManager
 import com.team4.ecohabit.navigation.NavItem
+import com.team4.ecohabit.screens.AddHabitScreen
 import com.team4.ecohabit.screens.HabitScreen
 import com.team4.ecohabit.screens.HomeScreen
 import com.team4.ecohabit.screens.ProfileScreen
@@ -106,13 +109,28 @@ fun EcoHabitApp() {
 
         containerColor = softGreen,
 
-        bottomBar = {
+        topBar = {
 
             if (currentRoute != "login") {
 
+                HeaderBar(
+                    isBackButton = currentRoute == "add_habit",
+
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        },
+
+        bottomBar = {
+
+            if (
+                currentRoute != "login" &&
+                currentRoute != "add_habit"
+            ) {
                 BottomNavigationBar(
                     navController = navController,
-
                     items = listOf(
                         NavItem.Home,
                         NavItem.Habit,
@@ -165,17 +183,37 @@ fun EcoHabitApp() {
                 }
 
                 composable("home") {
-                    HomeScreen()
+                    HomeScreen(
+                        onAddHabitClick = {
+                            navController.navigate("add_habit")
+                        }
+                    )
                 }
 
                 composable("habit") {
-                    HabitScreen()
+                    HabitScreen(
+                        onAddHabitClick = {
+                            navController.navigate("add_habit")
+                        }
+                    )
                 }
 
                 composable("profile") {
 
                     ProfileScreen(
                         navController = navController
+                    )
+                }
+
+                composable("add_habit") {
+
+                    AddHabitScreen(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onSaveClick = {
+
+                        }
                     )
                 }
             }

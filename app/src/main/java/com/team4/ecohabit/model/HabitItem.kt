@@ -8,3 +8,11 @@ data class HabitItem(
     val isChecked: Boolean = false,
     @DrawableRes val icon: Int
 )
+
+data class HabitCategory(
+    val name: String
+)
+
+data class HabitIcon(
+    @DrawableRes val icon: Int
+)
