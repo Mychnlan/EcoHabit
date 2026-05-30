@@ -1,19 +1,15 @@
 package com.team4.ecohabit
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,31 +18,33 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import com.team4.ecohabit.auth.GoogleAuthManager
 import com.team4.ecohabit.components.BottomNavigationBar
 import com.team4.ecohabit.components.HeaderBar
 import com.team4.ecohabit.components.PageLoading
 import com.team4.ecohabit.data.SessionManager
 import com.team4.ecohabit.navigation.NavItem
+import com.team4.ecohabit.navigation.Routes
 import com.team4.ecohabit.screens.AddHabitScreen
 import com.team4.ecohabit.screens.HabitScreen
 import com.team4.ecohabit.screens.HomeScreen
 import com.team4.ecohabit.screens.ProfileScreen
 import com.team4.ecohabit.screens.auth.LoginScreen
+import com.team4.ecohabit.screens.auth.RegisterScreen
 import com.team4.ecohabit.ui.theme.EcoHabitTheme
 import com.team4.ecohabit.ui.theme.softGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -58,11 +56,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Preview(showSystemUi = true)
 @Composable
 fun EcoHabitApp() {
 
     val context = LocalContext.current
+
+    val googleAuthManager = remember {
+        GoogleAuthManager(context)
+    }
 
     val sessionManager = remember {
         SessionManager(context)
@@ -111,10 +112,10 @@ fun EcoHabitApp() {
 
         topBar = {
 
-            if (currentRoute != "login") {
+            if (currentRoute != Routes.LOGIN && currentRoute != Routes.REGISTER) {
 
                 HeaderBar(
-                    isBackButton = currentRoute == "add_habit",
+                    isBackButton = currentRoute == Routes.ADD_HABIT,
 
                     onBackClick = {
                         navController.popBackStack()
@@ -126,8 +127,9 @@ fun EcoHabitApp() {
         bottomBar = {
 
             if (
-                currentRoute != "login" &&
-                currentRoute != "add_habit"
+                currentRoute != Routes.LOGIN &&
+                currentRoute != Routes.REGISTER &&
+                currentRoute != Routes.ADD_HABIT
             ) {
                 BottomNavigationBar(
                     navController = navController,
@@ -153,7 +155,7 @@ fun EcoHabitApp() {
                 modifier = Modifier.padding(padding)
             ) {
 
-                composable("login") {
+                composable(Routes.LOGIN) {
 
                     LoginScreen(
 
@@ -169,43 +171,106 @@ fun EcoHabitApp() {
 
                                 delay(1200)
 
-                                navController.navigate("home") {
+                                navController.navigate(Routes.HOME) {
 
-                                    popUpTo("login") {
+                                    popUpTo(Routes.LOGIN) {
                                         inclusive = true
                                     }
                                 }
 
                                 isPageLoading = false
                             }
+                        },
+
+                        onRegisterClick = {
+
+                            navController.navigate(Routes.REGISTER)
+                        },
+
+                        onGoogleSignIn = {
+
+                            runCatching {
+
+                                val user =
+                                    googleAuthManager.signIn()
+
+                                if (user != null) {
+
+                                    sessionManager.saveLogin()
+
+                                    navController.navigate(
+                                        Routes.HOME
+                                    ) {
+
+                                        popUpTo(
+                                            Routes.LOGIN
+                                        ) {
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+                            }
                         }
                     )
                 }
 
-                composable("home") {
+                composable(Routes.REGISTER) {
+
+                    RegisterScreen(
+
+                        onRegisterSuccess = {
+
+                            scope.launch {
+
+                                isPageLoading = true
+
+                                delay(300)
+
+                                sessionManager.saveLogin()
+
+                                delay(1200)
+
+                                navController.navigate(Routes.HOME) {
+
+                                    popUpTo(Routes.REGISTER) {
+                                        inclusive = true
+                                    }
+                                }
+
+                                isPageLoading = false
+                            }
+                        },
+
+                        onLoginClick = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Routes.HOME) {
                     HomeScreen(
                         onAddHabitClick = {
-                            navController.navigate("add_habit")
+                            navController.navigate(Routes.ADD_HABIT)
                         }
                     )
                 }
 
-                composable("habit") {
+                composable(Routes.HABIT) {
                     HabitScreen(
                         onAddHabitClick = {
-                            navController.navigate("add_habit")
+                            navController.navigate(Routes.ADD_HABIT)
                         }
                     )
                 }
 
-                composable("profile") {
+                composable(Routes.PROFILE) {
 
                     ProfileScreen(
                         navController = navController
                     )
                 }
 
-                composable("add_habit") {
+                composable(Routes.ADD_HABIT) {
 
                     AddHabitScreen(
                         onBackClick = {
@@ -234,4 +299,25 @@ fun EcoHabitApp() {
             }
         }
     }
+}
+
+private fun firebaseAuthWithGoogle(
+    idToken: String
+) {
+
+    val credential =
+        GoogleAuthProvider.getCredential(
+            idToken,
+            null
+        )
+
+    FirebaseAuth.getInstance()
+        .signInWithCredential(
+            credential
+        )
+        .addOnSuccessListener {
+
+            // sukses login
+
+        }
 }
