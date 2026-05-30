@@ -1,5 +1,6 @@
 package com.team4.ecohabit.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -10,46 +11,80 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team4.ecohabit.R
 import com.team4.ecohabit.components.CheckboxItemHabit
 import com.team4.ecohabit.components.HabitCircularProgress
 import com.team4.ecohabit.model.HabitItem
+import com.team4.ecohabit.ui.theme.brightGreen
 import com.team4.ecohabit.ui.theme.greenLogo
+import com.team4.ecohabit.ui.theme.softGreen
 import com.team4.ecohabit.ui.theme.textColor
 import com.team4.ecohabit.ui.theme.white
 
-@Preview(showBackground = true)
 @Composable
-fun HabitScreen(){
+fun HabitScreen(
+    onAddHabitClick: () -> Unit
+) {
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-
-        contentPadding = PaddingValues(
-            horizontal = 16.dp,
-            vertical = 16.dp
-        ),
-
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        item {
-            headerSection()
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 16.dp,
+                bottom = 120.dp
+            ),
+
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+
+            item { HeaderSection() }
+
+            item { ProgressSection() }
+
+            item {
+                DailyHabitSection()
+                Spacer(modifier = Modifier.height(100.dp))
+            }
         }
 
-        item {
-            ProgressSection()
-        }
+        ExtendedFloatingActionButton(
+            onClick = onAddHabitClick,
 
-        item{
-            DailyHabitSection()
-        }
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = 16.dp,
+                    bottom = 16.dp
+                ),
+
+            contentColor = white,
+            containerColor = brightGreen,
+
+            icon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_plus),
+                    contentDescription = null
+                )
+            },
+
+            text = {
+                Text("Add Habit")
+            }
+        )
     }
 }
 
 @Composable
-private fun headerSection(){
+private fun HeaderSection(){
     Text(
         text = "Today Habits",
         style = MaterialTheme.typography.headlineLarge,

@@ -35,4 +35,5 @@ sealed class NavItem(
         "Profile",
         R.drawable.ic_user
     )
+
 }

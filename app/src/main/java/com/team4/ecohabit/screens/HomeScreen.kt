@@ -45,9 +45,8 @@ import com.team4.ecohabit.ui.theme.buttonAction
 import com.team4.ecohabit.ui.theme.titleTextColor
 import com.team4.ecohabit.ui.theme.white
 
-@Preview(showSystemUi = true)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(onAddHabitClick: () -> Unit) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -69,7 +68,9 @@ fun HomeScreen() {
         }
 
         item{
-            QuickActionSection()
+            QuickActionSection(
+                onAddHabitClick = onAddHabitClick
+            )
         }
     }
 }
@@ -86,7 +87,9 @@ private fun ReminderSection() {
 }
 
 @Composable
-private fun QuickActionSection() {
+private fun QuickActionSection(
+    onAddHabitClick: () -> Unit
+) {
 
     Spacer(
         modifier = Modifier.height(20.dp)
@@ -110,19 +113,8 @@ private fun QuickActionSection() {
         QuickActionButton(
             modifier = Modifier.weight(1f),
             icon = R.drawable.ic_plus,
-            label = "Add Habit"
-        )
-
-        QuickActionButton(
-            modifier = Modifier.weight(1f),
-            icon = R.drawable.ic_progres,
-            label = "Progress"
-        )
-
-        QuickActionButton(
-            modifier = Modifier.weight(1f),
-            icon = R.drawable.ic_clock,
-            label = "Reminder"
+            label = "Add Habit",
+            onClick = onAddHabitClick
         )
     }
 }
@@ -131,7 +123,8 @@ private fun QuickActionSection() {
 private fun QuickActionButton(
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int,
-    label: String
+    label: String,
+    onClick: () -> Unit = {}
 ) {
 
     Card(
@@ -143,7 +136,7 @@ private fun QuickActionButton(
             containerColor = activeMenu
         ),
 
-        onClick = {}
+        onClick = onClick
     ) {
 
         Column(
@@ -159,7 +152,6 @@ private fun QuickActionButton(
             Icon(
                 painter = painterResource(id = icon),
                 contentDescription = label,
-                tint = activeIcon,
                 modifier = Modifier.size(28.dp)
             )
 

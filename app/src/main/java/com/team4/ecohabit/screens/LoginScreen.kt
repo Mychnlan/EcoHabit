@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.team4.ecohabit.R
 import com.team4.ecohabit.ui.theme.brightGreen
+import com.team4.ecohabit.ui.theme.buttonAction
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -350,12 +351,13 @@ fun LoginScreen(
                         ),
 
                     enabled = !isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                            containerColor = brightGreen,
+                        disabledContainerColor = brightGreen,
+                        disabledContentColor = Color.White
+                    ),
 
                     shape = RoundedCornerShape(12.dp),
-
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF056B13)
-                    )
                 ) {
 
                     if (isLoading) {
