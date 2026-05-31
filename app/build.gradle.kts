@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation(platform("com.google.firebase:firebase-bom:34.14.0"))
+    implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("androidx.credentials:credentials:1.6.0")

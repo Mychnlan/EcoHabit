@@ -1,5 +1,8 @@
 package com.team4.ecohabit
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,6 +23,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -44,14 +49,34 @@ import com.team4.ecohabit.ui.theme.softGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        createNotificationChannel()
 
         setContent {
             EcoHabitTheme {
                 EcoHabitApp()
             }
+        }
+    }
+    private fun createNotificationChannel() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            val channel = NotificationChannel(
+                "habit_channel",
+                "Habit Reminder",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+
+            val manager = getSystemService(
+                NotificationManager::class.java
+            )
+
+            manager.createNotificationChannel(channel)
         }
     }
 }
@@ -299,25 +324,4 @@ fun EcoHabitApp() {
             }
         }
     }
-}
-
-private fun firebaseAuthWithGoogle(
-    idToken: String
-) {
-
-    val credential =
-        GoogleAuthProvider.getCredential(
-            idToken,
-            null
-        )
-
-    FirebaseAuth.getInstance()
-        .signInWithCredential(
-            credential
-        )
-        .addOnSuccessListener {
-
-            // sukses login
-
-        }
 }

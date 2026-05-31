@@ -19,14 +19,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -37,16 +41,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 import com.team4.ecohabit.R
 import com.team4.ecohabit.components.CategorySection
 import com.team4.ecohabit.components.DailyTargetCard
 import com.team4.ecohabit.components.EcoCard
 import com.team4.ecohabit.components.HabitNameField
 import com.team4.ecohabit.components.RepeatCard
+import com.team4.ecohabit.helper.ReminderScheduler
+import com.team4.ecohabit.model.Habit
+import com.team4.ecohabit.model.HabitRepository
 import com.team4.ecohabit.model.RepeatDay
 import com.team4.ecohabit.ui.theme.brightGreen
 import com.team4.ecohabit.ui.theme.greenLogo
@@ -59,9 +68,18 @@ fun AddHabitScreen(
     onBackClick: () -> Unit,
     onSaveClick: () -> Unit
 ) {
-
+    val context = LocalContext.current
     var habitName by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Energy") }
+    var isLoading by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var reminderHour by remember {
+        mutableIntStateOf(8)
+    }
+
+    var reminderMinute by remember {
+        mutableIntStateOf(0)
+    }
 
     var selectedDays by remember {
         mutableStateOf(
@@ -145,7 +163,14 @@ fun AddHabitScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        ReminderSection()
+        ReminderSection(
+            hour = reminderHour,
+            minute = reminderMinute,
+            onTimeSelected = { hour, minute ->
+                reminderHour = hour
+                reminderMinute = minute
+            }
+        )
 
         Spacer(Modifier.height(16.dp))
 
@@ -169,7 +194,46 @@ fun AddHabitScreen(
         Spacer(Modifier.height(40.dp))
 
         Button(
-            onClick = onSaveClick,
+            onClick = {
+
+                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@Button
+
+                if (habitName.isBlank()) {
+                    return@Button
+                }
+
+                isLoading = true
+
+                val habit = Habit(
+                    userId = userId,
+                    name = habitName.trim(),
+                    category = selectedCategory,
+                    icon = selectedIcon,
+                    selectedDays = selectedDays.map { it.name },
+                    reminderHour = reminderHour,
+                    reminderMinute = reminderMinute
+                )
+
+                HabitRepository.addHabit(
+                    habit = habit,
+                    onSuccess = {
+                        isLoading = false
+                        showSuccessDialog = true
+
+                        ReminderScheduler.scheduleReminder(
+                            context = context,
+                            habitName = habit.name,
+                            hour = reminderHour,
+                            minute = reminderMinute
+                        )
+                    },
+                    onFailure = {
+                        isLoading = false
+                        it.printStackTrace()
+                    }
+                )
+            },
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(64.dp),
@@ -179,13 +243,97 @@ fun AddHabitScreen(
             shape = RoundedCornerShape(32.dp)
         ) {
             Text(
-                "Save Habit",
-                fontSize = 24.sp,
+                text = if (isLoading) "Saving..." else "Save Habit",
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+
+    if (showSuccessDialog) {
+
+        AlertDialog(
+            onDismissRequest = {},
+
+            shape = RoundedCornerShape(24.dp),
+
+            containerColor = white,
+
+            title = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+
+                    Text(
+                        text = "🌱 Habit Created!",
+                        color = brightGreen,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+
+            text = {
+                Text(
+                    text = "Your eco habit has been successfully added. Would you like to create another habit or return to the home screen?",
+                    color = textColor,
+                    fontSize = 16.sp
+                )
+            },
+
+            confirmButton = {
+
+                Button(
+                    onClick = {
+
+                        habitName = ""
+
+                        selectedCategory = "Energy"
+
+                        selectedDays = setOf(
+                            RepeatDay.MONDAY,
+                            RepeatDay.TUESDAY,
+                            RepeatDay.WEDNESDAY,
+                            RepeatDay.THURSDAY,
+                            RepeatDay.FRIDAY
+                        )
+
+                        selectedIcon = icons.first()
+
+                        showSuccessDialog = false
+                    },
+
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = brightGreen
+                    ),
+
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Add Another")
+                }
+            },
+
+            dismissButton = {
+
+                Button(
+                    onClick = {
+                        showSuccessDialog = false
+                        onBackClick()
+                    },
+
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = greenLogo
+                    ),
+
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Back Home")
+                }
+            }
+        )
     }
 }
 
@@ -236,30 +384,98 @@ private fun IconSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ReminderSection() {
+private fun ReminderSection(
+    hour: Int,
+    minute: Int,
+    onTimeSelected: (Int, Int) -> Unit
+) {
+
+    var showDialog by remember {
+        mutableStateOf(false)
+    }
 
     EcoCard {
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column {
 
-            Image(
-                painter = painterResource(R.drawable.ic_clock),
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
-            Spacer(Modifier.width(12.dp))
+                Image(
+                    painter = painterResource(R.drawable.ic_clock),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
 
-            Text(
-                "Reminder",
-                color = brightGreen,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+                Spacer(Modifier.width(12.dp))
+
+                Text(
+                    text = "Reminder",
+                    color = brightGreen,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    showDialog = true
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = greenLogo
+                )
+            ) {
+
+                Text(
+                    String.format(
+                        "%02d:%02d",
+                        hour,
+                        minute
+                    )
+                )
+            }
         }
+    }
+
+    if (showDialog) {
+
+        val state = rememberTimePickerState(
+            initialHour = hour,
+            initialMinute = minute,
+            is24Hour = true
+        )
+
+        AlertDialog(
+            onDismissRequest = {
+                showDialog = false
+            },
+
+            text = {
+                TimePicker(state = state)
+            },
+
+            confirmButton = {
+
+                Button(
+                    onClick = {
+
+                        onTimeSelected(
+                            state.hour,
+                            state.minute
+                        )
+
+                        showDialog = false
+                    }
+                ) {
+                    Text("Save")
+                }
+            }
+        )
     }
 }
 

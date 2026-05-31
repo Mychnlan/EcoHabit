@@ -11,6 +11,7 @@ composeBom = "2026.05.01"
 navigationCompose = "2.9.8"
 foundation = "1.11.2"
 animationCore = "1.11.2"
+firebaseFirestoreKtx = "26.3.0"
 
 [libraries]
 androidx-compose-animation = { module = "androidx.compose.animation:animation" }
@@ -31,6 +32,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
+firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
