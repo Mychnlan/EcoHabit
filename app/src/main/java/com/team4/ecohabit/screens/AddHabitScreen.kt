@@ -211,7 +211,8 @@ fun AddHabitScreen(
                     icon = selectedIcon,
                     selectedDays = selectedDays.map { it.name },
                     reminderHour = reminderHour,
-                    reminderMinute = reminderMinute
+                    reminderMinute = reminderMinute,
+                    completedDates = emptyList()
                 )
 
                 HabitRepository.addHabit(

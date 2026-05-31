@@ -1,5 +1,8 @@
 package com.team4.ecohabit.components
 
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -24,7 +27,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,27 +42,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.team4.ecohabit.model.Habit
 import com.team4.ecohabit.model.HabitItem
 import com.team4.ecohabit.ui.theme.brightGreen
 import com.team4.ecohabit.ui.theme.grayGreen
 import com.team4.ecohabit.ui.theme.greenLogo
 import com.team4.ecohabit.ui.theme.white
+import java.time.LocalDate
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CheckboxItemHabit(
-    habits: List<HabitItem>
+    habits: List<Habit>,
+    onCheckedChange: (Habit, Boolean) -> Unit
 ) {
-    val childCheckedStates = remember(habits) {
-        habits.map { it.isChecked }.toMutableStateList()
-    }
-
-    val parentState = when {
-        childCheckedStates.all { it } -> ToggleableState.On
-        childCheckedStates.none { it } -> ToggleableState.Off
-        else -> ToggleableState.Indeterminate
-    }
-
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -65,7 +65,17 @@ fun CheckboxItemHabit(
         ) {
             habits.forEachIndexed { index, habit ->
 
-                val isChecked = childCheckedStates[index]
+                val today =
+                    LocalDate.now().toString()
+
+                var isChecked by remember(
+                    habit.id,
+                    habit.completedDates
+                ) {
+                    mutableStateOf(
+                        today in habit.completedDates
+                    )
+                }
 
                 val cardColor = animateColorAsState(
                     targetValue =
@@ -185,7 +195,7 @@ fun CheckboxItemHabit(
                             Spacer(modifier = Modifier.width(12.dp))
 
                             Text(
-                                text = habit.title,
+                                text = habit.name,
                                 maxLines = 2,
 
                                 color = textColor.value,
@@ -205,7 +215,18 @@ fun CheckboxItemHabit(
                         CircleCheckbox(
                             checked = isChecked,
                             onCheckedChange = { checked ->
-                                childCheckedStates[index] = checked
+
+                                isChecked = checked
+
+                                Log.d("CHECKBOX", "CLICKED")
+                                Log.d("CHECKBOX", "Habit ID = '${habit.id}'")
+                                Log.d("CHECKBOX", "Habit Name = '${habit.name}'")
+                                Log.d("CHECKBOX", "Checked = $checked")
+
+                                onCheckedChange(
+                                    habit,
+                                    checked
+                                )
                             }
                         )
                     }
