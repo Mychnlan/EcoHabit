@@ -66,30 +66,55 @@ import com.team4.ecohabit.ui.theme.white
 @Composable
 fun AddHabitScreen(
     onBackClick: () -> Unit,
-    onSaveClick: () -> Unit
+    onSaveClick: () -> Unit,
+
+    existingHabit: Habit? = null
 ) {
     val context = LocalContext.current
-    var habitName by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("Energy") }
+    var habitName by remember {
+        mutableStateOf(
+            existingHabit?.name ?: ""
+        )
+    }
+    var selectedCategory by remember {
+        mutableStateOf(
+            existingHabit?.category ?: "Energy"
+        )
+    }
     var isLoading by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var reminderHour by remember {
-        mutableIntStateOf(8)
+        mutableIntStateOf(
+            existingHabit?.reminderHour ?: 8
+        )
     }
 
     var reminderMinute by remember {
-        mutableIntStateOf(0)
+        mutableIntStateOf(
+            existingHabit?.reminderMinute ?: 0
+        )
     }
 
     var selectedDays by remember {
+
         mutableStateOf(
-            setOf(
-                RepeatDay.MONDAY,
-                RepeatDay.TUESDAY,
-                RepeatDay.WEDNESDAY,
-                RepeatDay.THURSDAY,
-                RepeatDay.FRIDAY
-            )
+
+            existingHabit?.selectedDays
+                ?.mapNotNull {
+
+                    runCatching {
+                        RepeatDay.valueOf(it)
+                    }.getOrNull()
+
+                }?.toSet()
+
+                ?: setOf(
+                    RepeatDay.MONDAY,
+                    RepeatDay.TUESDAY,
+                    RepeatDay.WEDNESDAY,
+                    RepeatDay.THURSDAY,
+                    RepeatDay.FRIDAY
+                )
         )
     }
 
@@ -110,7 +135,9 @@ fun AddHabitScreen(
     )
 
     var selectedIcon by remember {
-        mutableIntStateOf(icons.first())
+        mutableIntStateOf(
+            existingHabit?.icon ?: icons.first()
+        )
     }
 
     Column(
@@ -121,7 +148,11 @@ fun AddHabitScreen(
             .padding(24.dp)
     ) {
         Text(
-            text = "Create New Habit",
+            text =
+                if (existingHabit == null)
+                    "Create New Habit"
+                else
+                    "Edit Habit",
             style = MaterialTheme.typography.headlineMedium,
             color = brightGreen
         )
@@ -129,6 +160,7 @@ fun AddHabitScreen(
         Text(
             text = "Plant a new seed for a better tomorrow.",
             color = textColor,
+            fontWeight = FontWeight.Light,
             fontSize = 18.sp
         )
 
@@ -187,10 +219,6 @@ fun AddHabitScreen(
             }
         )
 
-        Spacer(Modifier.height(16.dp))
-
-        DailyTargetCard()
-
         Spacer(Modifier.height(40.dp))
 
         Button(
@@ -215,24 +243,44 @@ fun AddHabitScreen(
                     completedDates = emptyList()
                 )
 
-                HabitRepository.addHabit(
-                    habit = habit,
-                    onSuccess = {
-                        isLoading = false
-                        showSuccessDialog = true
+                if(existingHabit == null){
+                    HabitRepository.addHabit(
+                        habit = habit,
+                        onSuccess = {
+                            isLoading = false
+                            showSuccessDialog = true
 
-                        ReminderScheduler.scheduleReminder(
-                            context = context,
-                            habitName = habit.name,
-                            hour = reminderHour,
-                            minute = reminderMinute
-                        )
-                    },
-                    onFailure = {
-                        isLoading = false
-                        it.printStackTrace()
-                    }
-                )
+                            ReminderScheduler.scheduleReminder(
+                                context = context,
+                                habitName = habit.name,
+                                hour = reminderHour,
+                                minute = reminderMinute
+                            )
+                        },
+                        onFailure = {
+                            isLoading = false
+                            it.printStackTrace()
+                        }
+                    )
+                } else {
+                    HabitRepository.updateHabit(
+                        habit = habit.copy(
+                            id = existingHabit.id,
+                            createdAt = existingHabit.createdAt,
+                            completedDates = existingHabit.completedDates
+                        ),
+
+                        onSuccess = {
+                            isLoading = false
+                            onSaveClick()
+                        },
+
+                        onFailure = {
+                            isLoading = false
+                        }
+                    )
+                }
+
             },
             enabled = !isLoading,
             modifier = Modifier
@@ -244,7 +292,13 @@ fun AddHabitScreen(
             shape = RoundedCornerShape(32.dp)
         ) {
             Text(
-                text = if (isLoading) "Saving..." else "Save Habit",
+                text =
+                    if (isLoading)
+                        "Saving..."
+                    else if (existingHabit == null)
+                        "Save Habit"
+                    else
+                        "Update Habit",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )

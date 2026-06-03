@@ -37,10 +37,12 @@ import com.team4.ecohabit.components.BottomNavigationBar
 import com.team4.ecohabit.components.HeaderBar
 import com.team4.ecohabit.components.PageLoading
 import com.team4.ecohabit.data.SessionManager
+import com.team4.ecohabit.model.Habit
 import com.team4.ecohabit.navigation.NavItem
 import com.team4.ecohabit.navigation.Routes
 import com.team4.ecohabit.screens.AddHabitScreen
 import com.team4.ecohabit.screens.HabitScreen
+import com.team4.ecohabit.screens.HistoryScreen
 import com.team4.ecohabit.screens.HomeScreen
 import com.team4.ecohabit.screens.ProfileScreen
 import com.team4.ecohabit.screens.auth.LoginScreen
@@ -143,7 +145,10 @@ fun EcoHabitApp() {
             if (currentRoute != Routes.LOGIN && currentRoute != Routes.REGISTER) {
 
                 HeaderBar(
-                    isBackButton = currentRoute == Routes.ADD_HABIT,
+                    isBackButton =
+                        currentRoute == Routes.ADD_HABIT ||
+                                currentRoute == Routes.EDIT_HABIT ||
+                                currentRoute == Routes.HISTORY,
 
                     onBackClick = {
                         navController.popBackStack()
@@ -157,7 +162,9 @@ fun EcoHabitApp() {
             if (
                 currentRoute != Routes.LOGIN &&
                 currentRoute != Routes.REGISTER &&
-                currentRoute != Routes.ADD_HABIT
+                currentRoute != Routes.ADD_HABIT &&
+                currentRoute != Routes.EDIT_HABIT &&
+                currentRoute != Routes.HISTORY
             ) {
                 BottomNavigationBar(
                     navController = navController,
@@ -284,9 +291,25 @@ fun EcoHabitApp() {
                 }
 
                 composable(Routes.HABIT) {
+
                     HabitScreen(
+
                         onAddHabitClick = {
                             navController.navigate(Routes.ADD_HABIT)
+                        },
+
+                        onEditHabitClick = { habit ->
+
+                            navController.currentBackStackEntry
+                                ?.savedStateHandle
+                                ?.set(
+                                    "edit_habit",
+                                    habit
+                                )
+
+                            navController.navigate(
+                                Routes.EDIT_HABIT
+                            )
                         }
                     )
                 }
@@ -295,6 +318,14 @@ fun EcoHabitApp() {
 
                     ProfileScreen(
                         navController = navController
+                    )
+                }
+
+                composable(Routes.HISTORY) {
+                    HistoryScreen(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
                     )
                 }
 
@@ -308,6 +339,31 @@ fun EcoHabitApp() {
 
                         }
                     )
+                }
+
+                composable(Routes.EDIT_HABIT) {
+
+                    val habit =
+                        navController
+                            .previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.get<Habit>("edit_habit")
+
+                    if (habit != null) {
+
+                        AddHabitScreen(
+
+                            existingHabit = habit,
+
+                            onBackClick = {
+                                navController.popBackStack()
+                            },
+
+                            onSaveClick = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
                 }
             }
 

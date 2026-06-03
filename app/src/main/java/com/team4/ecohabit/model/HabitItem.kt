@@ -1,7 +1,9 @@
 package com.team4.ecohabit.model
 
+import android.os.Parcelable
 import androidx.annotation.DrawableRes
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.parcelize.Parcelize
 
 data class HabitItem(
     val id: Int,
@@ -18,6 +20,7 @@ data class HabitIcon(
     @DrawableRes val icon: Int
 )
 
+@Parcelize
 data class Habit(
     val id: String = "",
     val userId: String = "",
@@ -29,7 +32,7 @@ data class Habit(
     val reminderMinute: Int = 0,
     val completedDates: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis()
-)
+): Parcelable
 
 object HabitRepository {
 
@@ -99,6 +102,25 @@ object HabitRepository {
             }
     }
 
+    fun updateHabit(
+        habit: Habit,
+        onSuccess: () -> Unit = {},
+        onFailure: (Exception) -> Unit = {}
+    ) {
+
+        firestore.collection("users")
+            .document(habit.userId)
+            .collection("habits")
+            .document(habit.id)
+            .set(habit)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener {
+                onFailure(it)
+            }
+    }
+
     fun updateHabitToday(
         userId: String,
         habitId: String,
@@ -115,6 +137,26 @@ object HabitRepository {
                 "completedDates",
                 completedDates
             )
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener {
+                onFailure(it)
+            }
+    }
+
+    fun deleteHabit(
+        userId: String,
+        habitId: String,
+        onSuccess: () -> Unit = {},
+        onFailure: (Exception) -> Unit = {}
+    ) {
+
+        firestore.collection("users")
+            .document(userId)
+            .collection("habits")
+            .document(habitId)
+            .delete()
             .addOnSuccessListener {
                 onSuccess()
             }
