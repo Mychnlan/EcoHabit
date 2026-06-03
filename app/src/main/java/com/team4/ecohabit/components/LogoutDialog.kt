@@ -3,6 +3,7 @@ package com.team4.ecohabit.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -137,6 +138,103 @@ fun LogoutDialog(
                     ) {
 
                         Text("Log Out")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteHabitDialog(
+    habitName: String,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit
+) {
+
+    Dialog(
+        onDismissRequest = onDismiss
+    ) {
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+
+            shape = RoundedCornerShape(32.dp),
+
+            colors = CardDefaults.cardColors(
+                containerColor = white
+            )
+        ) {
+
+            Column(
+                modifier = Modifier.padding(28.dp),
+
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .background(
+                            Color.Red.copy(alpha = 0.1f),
+                            CircleShape
+                        ),
+
+                    contentAlignment = Alignment.Center
+                ) {
+
+                    Icon(
+                        painter = painterResource(R.drawable.ic_trash),
+                        contentDescription = null,
+                        tint = Color.Red,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = "Delete Habit",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "Are you sure you want to delete \"$habitName\"?",
+                    textAlign = TextAlign.Center,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(100.dp)
+                    ) {
+
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = onDelete,
+                        modifier = Modifier.weight(1f),
+
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red
+                        ),
+
+                        shape = RoundedCornerShape(100.dp)
+                    ) {
+
+                        Text("Delete")
                     }
                 }
             }

@@ -29,6 +29,8 @@ import com.team4.ecohabit.components.HabitCircularProgress
 import com.team4.ecohabit.model.Habit
 import com.team4.ecohabit.model.HabitItem
 import com.team4.ecohabit.model.HabitRepository
+import com.team4.ecohabit.model.HistoryItem
+import com.team4.ecohabit.model.HistoryRepository
 import com.team4.ecohabit.ui.theme.brightGreen
 import com.team4.ecohabit.ui.theme.greenLogo
 import com.team4.ecohabit.ui.theme.softGreen
@@ -39,7 +41,8 @@ import java.time.LocalDate
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HabitScreen(
-    onAddHabitClick: () -> Unit
+    onAddHabitClick: () -> Unit,
+    onEditHabitClick: (Habit) -> Unit
 ) {
 
     val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -94,7 +97,8 @@ fun HabitScreen(
 
                 DailyHabitSection(
                     habits = habits,
-                    userId = userId
+                    userId = userId,
+                    onEditHabitClick = onEditHabitClick
                 )
 
                 Spacer(
@@ -216,7 +220,8 @@ private fun ProgressSection(
 @Composable
 private fun DailyHabitSection(
     habits: List<Habit>,
-    userId: String?
+    userId: String?,
+    onEditHabitClick: (Habit) -> Unit
 ) {
 
     Column(
@@ -267,11 +272,52 @@ private fun DailyHabitSection(
                                 .filterNot { it == today }
                         }
 
+                    val points = when (habit.category.trim().lowercase()) {
+                        "energy" -> 15
+                        "water" -> 10
+                        "recycling" -> 20
+                        "diet" -> 25
+                        "mindfulness" -> 10
+                        else -> 10
+                    }
+
+                    Log.d("POINTS", "Category = '${habit.category}'")
+
                     HabitRepository.updateHabitToday(
                         userId = userId,
                         habitId = habit.id,
                         completedDates = updatedDates
                     )
+
+                    val alreadyCompletedToday =
+                        today in habit.completedDates
+
+                    if (checked && !alreadyCompletedToday) {
+
+                        HistoryRepository.addOrUpdateHistory(
+                            userId = userId,
+
+                            history = HistoryItem(
+                                habitId = habit.id,
+                                habitName = habit.name,
+                                icon = habit.icon,
+                                points = points
+                            )
+                        )
+                    }
+                },
+                onDeleteHabit = { habit ->
+
+                    userId?.let {
+                        HabitRepository.deleteHabit(
+                            userId = it,
+                            habitId = habit.id
+                        )
+                    }
+                },
+
+                onEditHabit = { habit ->
+                    onEditHabitClick(habit)
                 }
             )
         }

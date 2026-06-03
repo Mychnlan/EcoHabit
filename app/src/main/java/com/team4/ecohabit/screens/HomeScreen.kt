@@ -1,52 +1,85 @@
 package com.team4.ecohabit.screens
 
+import android.annotation.SuppressLint
+import android.os.Build
 import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.team4.ecohabit.ui.theme.backgroundCardLight
-import com.team4.ecohabit.ui.theme.textColor
+import com.google.firebase.auth.FirebaseAuth
 import com.team4.ecohabit.R
-import com.team4.ecohabit.components.CheckboxItemHabit
-import com.team4.ecohabit.components.CircleCheckbox
 import com.team4.ecohabit.components.HabitCircularProgress
-import com.team4.ecohabit.model.HabitItem
+import com.team4.ecohabit.model.Habit
+import com.team4.ecohabit.model.HabitRepository
 import com.team4.ecohabit.ui.theme.activeIcon
 import com.team4.ecohabit.ui.theme.activeMenu
+import com.team4.ecohabit.ui.theme.backgroundCardLight
 import com.team4.ecohabit.ui.theme.brightGreen
-import com.team4.ecohabit.ui.theme.buttonAction
+import com.team4.ecohabit.ui.theme.textColor
 import com.team4.ecohabit.ui.theme.titleTextColor
 import com.team4.ecohabit.ui.theme.white
+import java.time.LocalDate
 
+@SuppressLint("NewApi")
 @Composable
 fun HomeScreen(onAddHabitClick: () -> Unit) {
+    val userId =
+        FirebaseAuth.getInstance()
+            .currentUser
+            ?.uid
+
+    var habits by remember {
+        mutableStateOf<List<Habit>>(emptyList())
+    }
+
+    LaunchedEffect(userId) {
+
+        if (userId == null) return@LaunchedEffect
+
+        HabitRepository.getHabits(
+            userId = userId,
+
+            onResult = {
+                habits = it
+            },
+
+            onError = {
+                it.printStackTrace()
+            }
+        )
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -64,10 +97,12 @@ fun HomeScreen(onAddHabitClick: () -> Unit) {
         }
 
         item {
-            ProgressSection()
+            ProgressSection(
+                habits = habits
+            )
         }
 
-        item{
+        item {
             QuickActionSection(
                 onAddHabitClick = onAddHabitClick
             )
@@ -225,13 +260,27 @@ private fun ReminderCard() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun ProgressSection() {
+private fun ProgressSection(
+    habits: List<Habit>
+) {
+    val total = habits.size
 
-    val completed = 6
-    val total = 7
+    val today =
+        LocalDate.now().toString()
 
-    val progress = completed / total.toFloat()
+    val completed =
+        habits.count {
+            today in it.completedDates
+        }
+
+    val progress =
+        if (total == 0)
+            0f
+        else
+            completed.toFloat() / total
+
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
