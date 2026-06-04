@@ -62,16 +62,23 @@ object FirebaseAuthManager {
                         .build()
 
                 user?.updateProfile(profileUpdates)
-
-                user?.sendEmailVerification()
                     ?.addOnSuccessListener {
 
-                        onSuccess()
+                        user.sendEmailVerification()
+                            .addOnSuccessListener {
+                                onSuccess()
+                            }
+                            .addOnFailureListener {
+                                onError(
+                                    "Failed to send verification email"
+                                )
+                            }
+
                     }
                     ?.addOnFailureListener {
 
                         onError(
-                            "Failed to send verification email"
+                            "Failed to save user profile"
                         )
                     }
             }

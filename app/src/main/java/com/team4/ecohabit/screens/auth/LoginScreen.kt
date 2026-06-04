@@ -1,5 +1,6 @@
 package com.team4.ecohabit.screens.auth
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.FirebaseAuth
 import com.team4.ecohabit.R
 import com.team4.ecohabit.auth.FirebaseAuthManager
 import com.team4.ecohabit.ui.theme.brightGreen
@@ -67,7 +69,11 @@ fun LoginScreen(
     onRegisterClick: () -> Unit,
     onGoogleSignIn: suspend () -> Result<Unit>
 ) {
+    val user = FirebaseAuth.getInstance().currentUser
 
+    Log.d("TEST", "UID=${user?.uid}")
+    Log.d("TEST", "NAME=${user?.displayName}")
+    Log.d("TEST", "EMAIL=${user?.email}")
     var email by rememberSaveable {
         mutableStateOf("")
     }

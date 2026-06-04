@@ -1,5 +1,6 @@
 package com.team4.ecohabit.screens
 
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -53,10 +54,12 @@ import com.team4.ecohabit.components.DailyTargetCard
 import com.team4.ecohabit.components.EcoCard
 import com.team4.ecohabit.components.HabitNameField
 import com.team4.ecohabit.components.RepeatCard
+import com.team4.ecohabit.helper.ReminderPermissionHelper
 import com.team4.ecohabit.helper.ReminderScheduler
 import com.team4.ecohabit.model.Habit
 import com.team4.ecohabit.model.HabitRepository
 import com.team4.ecohabit.model.RepeatDay
+import com.team4.ecohabit.receiver.HabitReminderReceiver
 import com.team4.ecohabit.ui.theme.brightGreen
 import com.team4.ecohabit.ui.theme.greenLogo
 import com.team4.ecohabit.ui.theme.softGreen
@@ -183,6 +186,7 @@ fun AddHabitScreen(
             }
         )
 
+
         Spacer(Modifier.height(24.dp))
 
         IconSection(
@@ -223,7 +227,16 @@ fun AddHabitScreen(
 
         Button(
             onClick = {
+                if (
+                    !ReminderPermissionHelper
+                        .hasExactAlarmPermission(context)
+                ) {
 
+                    ReminderPermissionHelper
+                        .requestExactAlarmPermission(context)
+
+                    return@Button
+                }
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@Button
 
                 if (habitName.isBlank()) {
@@ -244,24 +257,41 @@ fun AddHabitScreen(
                 )
 
                 if(existingHabit == null){
-                    HabitRepository.addHabit(
-                        habit = habit,
-                        onSuccess = {
-                            isLoading = false
-                            showSuccessDialog = true
+                    HabitRepository.checkHabitExists(
+                        userId = userId,
+                        habitName = habitName
+                    ) { exists ->
 
-                            ReminderScheduler.scheduleReminder(
-                                context = context,
-                                habitName = habit.name,
-                                hour = reminderHour,
-                                minute = reminderMinute
-                            )
-                        },
-                        onFailure = {
+                        if (exists) {
+
                             isLoading = false
-                            it.printStackTrace()
+
+                            return@checkHabitExists
                         }
-                    )
+
+                        HabitRepository.addHabit(
+                            habit = habit,
+
+                            onSuccess = {
+
+                                isLoading = false
+                                showSuccessDialog = true
+
+                                ReminderScheduler.scheduleReminder(
+                                    context = context,
+                                    habitName = habit.name,
+                                    hour = reminderHour,
+                                    minute = reminderMinute
+                                )
+                            },
+
+                            onFailure = {
+
+                                isLoading = false
+                                it.printStackTrace()
+                            }
+                        )
+                    }
                 } else {
                     HabitRepository.updateHabit(
                         habit = habit.copy(

@@ -39,11 +39,13 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.team4.ecohabit.R
+import com.team4.ecohabit.helper.ReminderScheduler
 import com.team4.ecohabit.model.Habit
 import com.team4.ecohabit.ui.theme.grayGreen
 import com.team4.ecohabit.ui.theme.greenLogo
@@ -305,7 +307,7 @@ fun CheckboxItemHabit(
     }
 
     if (showDeleteDialog && selectedHabit != null) {
-
+        val context = LocalContext.current
         DeleteHabitDialog(
 
             habitName = selectedHabit!!.name,
@@ -315,6 +317,10 @@ fun CheckboxItemHabit(
             },
 
             onDelete = {
+                ReminderScheduler.cancelReminder(
+                    context = context,
+                    habitName = selectedHabit!!.name
+                )
 
                 selectedHabit?.let {
 
