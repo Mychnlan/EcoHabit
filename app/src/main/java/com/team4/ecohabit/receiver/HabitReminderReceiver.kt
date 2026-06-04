@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.team4.ecohabit.R
 
@@ -13,6 +14,7 @@ class HabitReminderReceiver : BroadcastReceiver() {
         context: Context,
         intent: Intent
     ) {
+        Log.d("REMINDER", "Receiver called")
 
         val habitName =
             intent.getStringExtra("habit_name")

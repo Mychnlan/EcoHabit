@@ -1,5 +1,6 @@
 package com.team4.ecohabit
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
@@ -59,6 +60,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         createNotificationChannel()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.POST_NOTIFICATIONS
+                ),
+                100
+            )
+        }
+
 
         setContent {
             EcoHabitTheme {

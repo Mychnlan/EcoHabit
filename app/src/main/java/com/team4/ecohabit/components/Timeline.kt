@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -41,6 +42,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HistoryTimeline(
     histories: List<HistoryItem>
@@ -62,59 +64,97 @@ fun HistoryTimeline(
         return
     }
 
+    val groupedHistories =
+        histories.groupBy { history ->
+
+            Instant.ofEpochMilli(history.completedAt)
+                .atZone(
+                    ZoneId.systemDefault()
+                )
+                .toLocalDate()
+        }
+
+    val sortedGroups =
+        groupedHistories.toSortedMap(
+            compareByDescending { it }
+        )
+
     Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
 
-        histories.forEach { history ->
+        sortedGroups.forEach { (date, historiesInDate) ->
 
-            Row {
+            HistoryDateSection(
+                date = date,
+                histories = historiesInDate
+            )
+        }
+    }
+}
 
-                Column(
-                    horizontalAlignment =
-                        Alignment.CenterHorizontally
-                ) {
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun HistoryDateSection(
+    date: LocalDate,
+    histories: List<HistoryItem>
+) {
 
-                    Box(
-                        modifier = Modifier
-                            .size(14.dp)
-                            .background(
-                                greenLogo,
-                                CircleShape
-                            )
+    Row {
+
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .background(
+                        greenLogo,
+                        CircleShape
                     )
+            )
 
-                    Box(
-                        modifier = Modifier
-                            .width(2.dp)
-                            .height(120.dp)
-                            .background(
-                                backgroundCardLight
-                            )
+            Box(
+                modifier = Modifier
+                    .width(2.dp)
+                    .height(
+                        (histories.size * 110).dp
                     )
-                }
-
-                Spacer(
-                    modifier = Modifier.width(16.dp)
-                )
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-
-                    Text(
-                        text = formatDate(
-                            history.completedAt
-                        ),
-
-                        style = MaterialTheme.typography.titleLarge,
-
-                        color = greenLogo
+                    .background(
+                        backgroundCardLight
                     )
+            )
+        }
 
-                    Spacer(
-                        modifier = Modifier.height(8.dp)
-                    )
+        Spacer(
+            modifier = Modifier.width(16.dp)
+        )
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+
+            Text(
+                text = formatSectionDate(date),
+
+                style =
+                    MaterialTheme.typography.titleLarge,
+
+                color = greenLogo
+            )
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(12.dp)
+            ) {
+
+                histories.forEach { history ->
 
                     HistoryCard(
                         history = history
@@ -216,36 +256,18 @@ private fun HistoryCard(
     }
 }
 
-private fun formatTime(
-    timestamp: Long
-): String {
-
-    return SimpleDateFormat(
-        "hh:mm a",
-        Locale.getDefault()
-    ).format(
-        Date(timestamp)
-    )
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
-private fun formatDate(
-    timestamp: Long
+private fun formatSectionDate(
+    date: LocalDate
 ): String {
-
-    val date =
-        Instant.ofEpochMilli(timestamp)
-            .atZone(
-                ZoneId.systemDefault()
-            )
-            .toLocalDate()
 
     val today =
         LocalDate.now()
 
     return when (date) {
 
-        today -> "Today"
+        today ->
+            "Today"
 
         today.minusDays(1) ->
             "Yesterday"
@@ -257,4 +279,16 @@ private fun formatDate(
                 )
             )
     }
+}
+
+private fun formatTime(
+    timestamp: Long
+): String {
+
+    return SimpleDateFormat(
+        "hh:mm a",
+        Locale.getDefault()
+    ).format(
+        Date(timestamp)
+    )
 }

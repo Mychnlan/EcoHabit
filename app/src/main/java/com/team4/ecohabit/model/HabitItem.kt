@@ -164,4 +164,30 @@ object HabitRepository {
                 onFailure(it)
             }
     }
+
+    fun checkHabitExists(
+        userId: String,
+        habitName: String,
+        onResult: (Boolean) -> Unit
+    ) {
+
+        firestore.collection("users")
+            .document(userId)
+            .collection("habits")
+            .whereEqualTo(
+                "searchName",
+                habitName.trim()
+            )
+            .get()
+            .addOnSuccessListener {
+
+                onResult(
+                    !it.isEmpty
+                )
+            }
+            .addOnFailureListener {
+
+                onResult(false)
+            }
+    }
 }

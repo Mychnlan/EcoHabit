@@ -1,5 +1,7 @@
 package com.team4.ecohabit.screens
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,9 +43,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
 import com.team4.ecohabit.R
 import com.team4.ecohabit.components.LogoutDialog
 import com.team4.ecohabit.data.SessionManager
+import com.team4.ecohabit.model.ProfileRepository
+import com.team4.ecohabit.model.ProfileStats
 import com.team4.ecohabit.navigation.Routes
 import com.team4.ecohabit.ui.theme.brightGreen
 import com.team4.ecohabit.ui.theme.grayGreen
@@ -87,19 +93,43 @@ fun ProfileScreen(
 @Composable
 fun ProfileCard() {
 
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
+    val currentUser =
+        FirebaseAuth.getInstance()
+            .currentUser
+
+    var profileStats by remember {
+
+        mutableStateOf(
+            ProfileStats()
+        )
+    }
+
+    LaunchedEffect(userId) {
+
+        if (userId == null)
+            return@LaunchedEffect
+
+        ProfileRepository.getProfileStats(
+            userId = userId
+        ) {
+            profileStats = it
+        }
+    }
+
     Card(
         modifier = Modifier
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = 16.dp
+            )
             .fillMaxWidth(),
 
         shape = RoundedCornerShape(28.dp),
 
         colors = CardDefaults.cardColors(
             containerColor = Color.White
-        ),
-
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 12.dp
         )
     ) {
 
@@ -108,36 +138,46 @@ fun ProfileCard() {
                 .fillMaxWidth()
                 .padding(24.dp),
 
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment =
+                Alignment.CenterHorizontally
         ) {
 
             Image(
-                painter = painterResource(R.drawable.ic_leaf),
-                contentDescription = "Profile",
-
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(CircleShape),
-
-                contentScale = ContentScale.Crop
+                painter = painterResource(
+                    R.drawable.ic_leaf
+                ),
+                contentDescription = null,
+                modifier = Modifier.size(90.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
 
             Text(
-                text = "Alex Morgan",
-                style = MaterialTheme.typography.headlineMedium,
+                text =
+                    currentUser?.displayName
+                        ?: "Eco User",
+
+                style =
+                    MaterialTheme.typography.headlineMedium,
+
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
 
             Text(
-                text = "alex.morgan@example.com",
+                text =
+                    currentUser?.email ?: "",
                 color = Color.Gray
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(
+                modifier = Modifier.height(28.dp)
+            )
 
             Card(
                 shape = RoundedCornerShape(24.dp),
@@ -153,7 +193,8 @@ fun ProfileCard() {
                         vertical = 20.dp
                     ),
 
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment =
+                        Alignment.CenterHorizontally
                 ) {
 
                     Text(
@@ -162,19 +203,29 @@ fun ProfileCard() {
                         fontWeight = FontWeight.Bold
                     )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(
+                        modifier = Modifier.height(6.dp)
+                    )
 
                     Text(
-                        text = "4,250",
-                        style = MaterialTheme.typography.displaySmall,
+                        text = profileStats.totalPoints.toString(),
+
+                        style =
+                            MaterialTheme.typography.displaySmall,
+
                         fontWeight = FontWeight.ExtraBold,
+
                         color = Color.White
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
 
                     Text(
-                        text = "+120 this week",
+                        text =
+                            "+${profileStats.weeklyPoints} this week",
+
                         color = Color.White
                     )
                 }
@@ -193,6 +244,7 @@ fun SettingsCard(
     var showLogoutDialog by remember {
         mutableStateOf(false)
     }
+    val context = LocalContext.current
 
     Card(
         modifier = Modifier
@@ -223,14 +275,6 @@ fun SettingsCard(
             HorizontalDivider()
 
             SettingItem(
-                icon = R.drawable.ic_user,
-                title = "Personal Information",
-                subtitle = "Update your name, email"
-            )
-
-            HorizontalDivider()
-
-            SettingItem(
                 icon = R.drawable.ic_history,
                 title = "Habit History",
                 subtitle = "View your habit progress and history",
@@ -244,9 +288,28 @@ fun SettingsCard(
             HorizontalDivider()
 
             SettingItem(
-                icon = R.drawable.ic_notification, //ic_notification
+                icon = R.drawable.ic_notification,
                 title = "Notifications",
-                subtitle = "Manage habit reminders and alerts"
+                subtitle = "Manage habit reminders and alerts",
+                onClick = {
+
+                    val intent = Intent(
+                        Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS
+                    ).apply {
+
+                        putExtra(
+                            Settings.EXTRA_APP_PACKAGE,
+                            context.packageName
+                        )
+
+                        putExtra(
+                            Settings.EXTRA_CHANNEL_ID,
+                            "habit_channel"
+                        )
+                    }
+
+                    context.startActivity(intent)
+                }
             )
 
             HorizontalDivider()
