@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.splashscreen.SplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -45,12 +46,16 @@ import com.team4.ecohabit.screens.AddHabitScreen
 import com.team4.ecohabit.screens.HabitScreen
 import com.team4.ecohabit.screens.HistoryScreen
 import com.team4.ecohabit.screens.HomeScreen
+import com.team4.ecohabit.screens.OnboardingScreen
 import com.team4.ecohabit.screens.ProfileScreen
+import com.team4.ecohabit.screens.SplashScreen
 import com.team4.ecohabit.screens.auth.LoginScreen
 import com.team4.ecohabit.screens.auth.RegisterScreen
 import com.team4.ecohabit.ui.theme.EcoHabitTheme
 import com.team4.ecohabit.ui.theme.softGreen
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 
@@ -111,9 +116,6 @@ fun EcoHabitApp() {
         SessionManager(context)
     }
 
-    var startDestination by remember {
-        mutableStateOf<String?>(null)
-    }
 
     var isPageLoading by remember {
         mutableStateOf(false)
@@ -129,24 +131,6 @@ fun EcoHabitApp() {
 
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-
-        sessionManager
-            .isLoginValid()
-            .collect { valid ->
-
-                startDestination =
-                    if (valid) "home"
-                    else "login"
-            }
-    }
-
-    if (startDestination == null) {
-
-        PageLoading()
-
-        return
-    }
 
     Scaffold(
 
@@ -154,7 +138,10 @@ fun EcoHabitApp() {
 
         topBar = {
 
-            if (currentRoute != Routes.LOGIN && currentRoute != Routes.REGISTER) {
+            if (currentRoute != Routes.LOGIN &&
+                currentRoute != Routes.REGISTER &&
+                currentRoute != Routes.SPLASH &&
+                currentRoute != Routes.ONBOARDING) {
 
                 HeaderBar(
                     isBackButton =
@@ -176,7 +163,9 @@ fun EcoHabitApp() {
                 currentRoute != Routes.REGISTER &&
                 currentRoute != Routes.ADD_HABIT &&
                 currentRoute != Routes.EDIT_HABIT &&
-                currentRoute != Routes.HISTORY
+                currentRoute != Routes.HISTORY &&
+                currentRoute != Routes.SPLASH &&
+                currentRoute != Routes.ONBOARDING
             ) {
                 BottomNavigationBar(
                     navController = navController,
@@ -197,10 +186,88 @@ fun EcoHabitApp() {
             NavHost(
                 navController = navController,
 
-                startDestination = startDestination!!,
+                startDestination = Routes.SPLASH,
 
                 modifier = Modifier.padding(padding)
             ) {
+                composable(Routes.SPLASH) {
+
+                    SplashScreen {
+
+                        scope.launch {
+
+                            delay(2500)
+
+                            val onboarding =
+                                sessionManager
+                                    .isOnboardingCompleted()
+                                    .first()
+
+                            val login =
+                                sessionManager
+                                    .isLoginValid()
+                                    .first()
+
+                            when {
+
+                                !onboarding -> {
+
+                                    navController.navigate(
+                                        Routes.ONBOARDING
+                                    ) {
+                                        popUpTo(Routes.SPLASH) {
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+
+                                login -> {
+
+                                    navController.navigate(
+                                        Routes.HOME
+                                    ) {
+                                        popUpTo(Routes.SPLASH) {
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+
+                                else -> {
+
+                                    navController.navigate(
+                                        Routes.LOGIN
+                                    ) {
+                                        popUpTo(Routes.SPLASH) {
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                composable(Routes.ONBOARDING) {
+
+                    OnboardingScreen(
+
+                        onFinished = {
+
+                            scope.launch {
+
+                                sessionManager
+                                    .saveOnboardingCompleted()
+
+                                navController.navigate(
+                                    Routes.LOGIN
+                                ) {
+
+                                    popUpTo(0)
+                                }
+                            }
+                        }
+                    )
+                }
 
                 composable(Routes.LOGIN) {
 
