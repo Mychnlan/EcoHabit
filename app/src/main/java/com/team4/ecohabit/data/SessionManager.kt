@@ -17,6 +17,22 @@ private val Context.dataStore by preferencesDataStore(
 class SessionManager(
     private val context: Context
 ) {
+    private val onboardingKey =
+        booleanPreferencesKey(
+            "onboarding_completed"
+        )
+
+    suspend fun saveOnboardingCompleted() {
+        context.dataStore.edit {
+            it[onboardingKey] = true
+        }
+    }
+
+    fun isOnboardingCompleted(): Flow<Boolean> {
+        return context.dataStore.data.map {
+            it[onboardingKey] ?: false
+        }
+    }
 
     companion object {
 
